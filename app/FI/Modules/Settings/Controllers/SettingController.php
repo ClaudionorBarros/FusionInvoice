@@ -13,6 +13,7 @@ namespace FI\Modules\Settings\Controllers;
 
 use App;
 use Config;
+use Crypt;
 use Input;
 use Redirect;
 use View;
