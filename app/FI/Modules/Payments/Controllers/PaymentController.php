@@ -143,7 +143,7 @@ class PaymentController extends \BaseController {
 		
 		return View::make('payments._modal_enter_payment')
 		->with('invoice_id', Input::get('invoice_id'))
-		->with('balance', Input::get('balance'))
+		->with('balance', App::make('InvoiceRepository')->find(Input::get('invoice_id'))->amount->formatted_numeric_balance)
 		->with('date', $date)
 		->with('paymentMethods', App::make('PaymentMethodRepository')->all())
 		->with('customFields', App::make('CustomFieldRepository')->getByTable('payments'))

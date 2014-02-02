@@ -45,7 +45,6 @@
                 $('.enter-payment').click(function() {
                 	$('#modal-placeholder').load("{{ route('payments.ajax.modalEnterPayment') }}", {
                 		invoice_id: $(this).data('invoice-id'),
-                		balance: $(this).data('invoice-balance'),
                 		redirectTo: '{{ URL::current() }}'
                 	});
                 });

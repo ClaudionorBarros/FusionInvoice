@@ -45,7 +45,7 @@
 							</a>
 						</li>
 						<li>
-							<a href="javascript:void(0)" class="enter-payment" data-invoice-id="{{ $invoice->id }}" data-invoice-balance="{{ $invoice->amount->formatted_numeric_balance }}">
+							<a href="javascript:void(0)" class="enter-payment" data-invoice-id="{{ $invoice->id }}">
 							<i class="icon-shopping-cart"></i> {{ trans('fi.enter_payment') }}
 						</li>
 						<li>
