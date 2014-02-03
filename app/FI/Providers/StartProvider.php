@@ -47,6 +47,8 @@ class StartProvider extends ServiceProvider {
         }
 
         $this->app->register('Profiler\ProfilerServiceProvider');
+
+        $this->app->bind('MailValidator', 'FI\Validators\MailValidator');
     }
 
 }
