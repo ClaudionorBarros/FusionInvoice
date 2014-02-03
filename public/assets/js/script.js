@@ -78,3 +78,25 @@ function insertAtCaret(areaId, text) {
     }
     txtarea.scrollTop = scrollPos;
 }
+
+/**
+ * Renders error messages into placeholder, styles the input fields. If errors is null, just hides the errors.
+ * 
+ * @param errors object in following format (Validator->getMessageBag()->toArray() returns this):
+ *  ` "inputId": ["Error message."], "anotherInputId": ["Another error message."] ` or null
+ * @param placeholder jQuery element where to put error messages
+ */
+function showErrors(errors, placeholder) {
+    
+    $('.control-group.error').removeClass('error');
+    $(placeholder).html('');
+    if (errors == null && placeholder) {
+        return;
+    }
+
+    $.each(errors, function(id, message) {
+        if (id) $('#' + id).parents('.control-group').addClass('error');
+        if (placeholder) $(placeholder).append('<div class="alert alert-error">' + message[0] + '</div>');
+    });
+
+}
