@@ -6,20 +6,24 @@
 		
 		$('#btn-mail-invoice-confirm').click(function() {
 
+			$('#btn-mail-invoice-confirm').attr('disabled', 'disabled');
+			$('#form-status-placeholder').html('<div class="alert alert-info">{{ trans('fi.sending') }}</div>');
+
 			$.post("{{ route('invoices.ajax.mailInvoice') }}", {
 				invoice_id: {{ $invoiceId }},
 				to: $('#to').val(),
 				cc: $('#cc').val(),
 				subject: $('#subject').val()
-			}, function(data) {
-				var response = JSON.parse(data);
-
-				if (response.success == '1') {
-					window.location = "{{ $redirectTo }}";
+			}).done(function(response) {
+				$('#form-status-placeholder').html('<div class="alert alert-success">{{ trans('fi.sent') }}</div>');
+				setTimeout('window.location="{{ $redirectTo }}";', 1000);
+			}).fail(function(response) {
+				if (response.status == 400) {
+					showErrors($.parseJSON(response.responseText).errors, '#form-status-placeholder');
+				} else {
+					alert("{{ trans('fi.unknown_error') }}");
 				}
-				else {
-					alert(response.message);
-				}
+				$('#btn-mail-invoice-confirm').removeAttr('disabled');
 			});
 		});
 	});
@@ -33,6 +37,8 @@
 			<h3>{{ trans('fi.email_invoice') }}</h3>
 		</div>
 		<div class="modal-body">
+
+			<div id="form-status-placeholder"></div>
 
 			<div class="control-group">
 				<label class="control-label">{{ trans('fi.to') }}: </label>

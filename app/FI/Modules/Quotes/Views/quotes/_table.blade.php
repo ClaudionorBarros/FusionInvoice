@@ -37,11 +37,13 @@
 								<i class="icon-file-alt"></i> {{ trans('fi.view_quote') }}
 							</a>
 						</li>
+						@if ($mailConfigured)
 						<li>
 							<a href="javascript:void(0)" class="mail-quote" data-quote-id="{{ $quote->id }}" data-redirect-to="{{ Request::url() }}">
 								<i class="icon-envelope"></i> {{ trans('fi.send_email') }}
 							</a>
 						</li>
+						@endif
 						<li>
 							<a href="{{ route('quotes.delete', array($quote->id)) }}" onclick="return confirm('{{ trans('fi.delete_quote_warning') }}');">
 								<i class="icon-trash"></i> {{ trans('fi.delete') }}

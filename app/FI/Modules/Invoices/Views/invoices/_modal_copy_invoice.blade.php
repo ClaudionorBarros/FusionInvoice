@@ -28,14 +28,13 @@
 				created_at: $('#created_at').val(),
 				invoice_group_id: $('#invoice_group_id').val(),
 				user_id: $('#user_id').val()
-			},
-			function(data) {
-				var response = JSON.parse(data);
-				if (response.success == '1') {
-					window.location = "{{ url('invoices') }}/" + response.id;
-				}
-				else {
-					alert(response.message);
+			}).done(function(response) {
+				window.location = "{{ url('invoices') }}/" + response.id;
+			}).fail(function(response) {
+				if (response.status == 400) {
+					showErrors($.parseJSON(response.responseText).errors, '#form-status-placeholder');
+				} else {
+					alert("{{ trans('fi.unknown_error') }}");
 				}
 			});
 		});
@@ -50,6 +49,8 @@
 			<h3>{{ trans('fi.copy_invoice') }}</h3>
 		</div>
 		<div class="modal-body">
+
+			<div id="form-status-placeholder"></div>
 
 			<input type="hidden" name="user_id" id="user_id" value="{{ $user_id }}">
 			

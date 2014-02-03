@@ -18,6 +18,7 @@ use Event;
 use Input;
 use Mail;
 use Redirect;
+use Response;
 use View;
 
 use FI\Classes\Date;
@@ -88,6 +89,7 @@ class InvoiceController extends \BaseController {
 		->with('invoices', $invoices)
 		->with('status', $status)
 		->with('statuses', $statuses)
+		->with('mailConfigured', (Config::get('fi.mailDriver')) ? true : false)
 		->with('filterRoute', route('invoices.index', array($status)));
 	}
 
@@ -101,7 +103,10 @@ class InvoiceController extends \BaseController {
 
 		if (!$this->validator->validate(Input::all(), 'createRules'))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors' => $this->validator->errors()->toArray()
+			), 400);
 		}
 
 		$clientId = $client->findIdByName(Input::get('client_name'));
@@ -128,7 +133,7 @@ class InvoiceController extends \BaseController {
 
 		if (Input::get('recurring'))
 		{
-			$recurringInvoice = App::make('RecurringInvoiceRepository');
+			$recurringInvoice = App::make('Rec urringInvoiceRepository');
 
 			$recurringInvoice->create(
 				array(
@@ -140,7 +145,7 @@ class InvoiceController extends \BaseController {
 			);
 		}
 
-		return json_encode(array('success' => 1, 'id' => $invoiceId));
+		return Response::json(array('success' => true, 'id' => $invoiceId), 200);
 	}
 
 	/**
@@ -152,14 +157,20 @@ class InvoiceController extends \BaseController {
 	{
 		if (!$this->validator->validate(Input::all(), 'updateRules'))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $this->validator->errors()->toArray()
+			), 400);
 		}
 
 		$itemValidator = App::make('InvoiceItemValidator');
 
 		if (!$itemValidator->validateMulti(json_decode(Input::get('items'))))
 		{
-			return json_encode(array('success' => 0, 'message' => $itemValidator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $itemValidator->errors()->toArray()
+			), 400);
 		}
 
 		$input  = Input::all();
@@ -220,7 +231,7 @@ class InvoiceController extends \BaseController {
 
 		Event::fire('invoice.modified', $id);
 
-		return json_encode(array('success' => 1));
+		return Response::json(array('success' => true), 200);
 	}
 
 	/**
@@ -235,7 +246,8 @@ class InvoiceController extends \BaseController {
 		->with('statuses', InvoiceStatuses::lists())
 		->with('taxRates', App::make('TaxRateRepository')->lists())
 		->with('invoiceTaxRates', $this->invoiceTaxRate->findByInvoiceId($id))
-		->with('customFields', App::make('CustomFieldRepository')->getByTable('invoices'));
+		->with('customFields', App::make('CustomFieldRepository')->getByTable('invoices'))
+		->with('mailConfigured', (Config::get('fi.mailDriver')) ? true : false);
 	}
 
 	/**
@@ -349,14 +361,17 @@ class InvoiceController extends \BaseController {
 	{
 		if (!$this->validator->validate(Input::all(), 'createRules'))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $this->validator->errors()->toArray()
+			), 400);
 		}
 
 		$invoiceCopy = App::make('InvoiceCopyRepository');
 
 		$invoiceId = $invoiceCopy->copyInvoice(Input::get('invoice_id'), Input::get('client_name'), Date::unformat(Input::get('created_at')), Date::incrementDateByDays(Date::unformat(Input::get('created_at')), Config::get('fi.invoicesDueAfter')), Input::get('invoice_group_id'), Auth::user()->id);
 
-		return json_encode(array('success' => 1, 'id' => $invoiceId));
+		return Response::json(array('success' => true, 'id' => $invoiceId), 200);
 	}
 
 	/**
@@ -383,22 +398,33 @@ class InvoiceController extends \BaseController {
 	{
 		$invoice = $this->invoice->find(Input::get('invoice_id'));
 
+		$mailValidator = App::make('MailValidator');
+
+		if (!$mailValidator->validate(Input::all()))
+		{
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $mailValidator->errors()->toArray()
+			), 400);
+		}
+
+		$template = ($invoice->is_overdue) ? 'templates.emails.invoice_overdue' : 'templates.emails.invoice';
+
 		try
 		{
-			$template = ($invoice->is_overdue) ? 'templates.emails.invoice_overdue' : 'templates.emails.invoice';
-
 			Mail::send($template, array('invoice' => $invoice), function($message) use ($invoice)
 			{
 				$message->from($invoice->user->email)
 				->to(Input::get('to'), $invoice->client->name)
 				->subject(Input::get('subject'));
 			});
-
-			return json_encode(array('success' => 1));
 		}
-		catch (Exception $e)
+		catch (\Swift_TransportException $e)
 		{
-			return json_encode(array('success' => 0, 'message' => $e->getMessage()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => array(array($e->getMessage()))
+			), 400);
 		}
 	}
 	

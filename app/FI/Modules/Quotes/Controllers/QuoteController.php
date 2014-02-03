@@ -18,6 +18,7 @@ use Event;
 use Input;
 use Mail;
 use Redirect;
+use Response;
 use View;
 
 use FI\Classes\Date;
@@ -87,6 +88,7 @@ class QuoteController extends \BaseController {
 		->with('quotes', $quotes)
 		->with('status', $status)
 		->with('statuses', $statuses)
+		->with('mailConfigured', (Config::get('fi.mailDriver')) ? true : false)
 		->with('filterRoute', route('quotes.index', array($status)));
 	}
 
@@ -100,7 +102,10 @@ class QuoteController extends \BaseController {
 
 		if (!$this->validator->validate(Input::all(), 'createRules'))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $this->validator->errors()->toArray()
+			), 400);
 		}
 
 		$clientId = $client->findIdByName(Input::get('client_name'));
@@ -124,7 +129,7 @@ class QuoteController extends \BaseController {
 
 		$quoteId = $this->quote->create($input);
 
-		return json_encode(array('success' => 1, 'id' => $quoteId));
+		return Response::json(array('success' => true, 'id' => $quoteId), 200);
 	}
 
 	/**
@@ -136,14 +141,20 @@ class QuoteController extends \BaseController {
 	{
 		if (!$this->validator->validate(Input::all(), 'updateRules'))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors' => $this->validator->errors()->toArray()
+			), 400);
 		}
 
 		$itemValidator = App::make('FI\Validators\ItemValidator');
 
 		if (!$itemValidator->validateMulti(json_decode(Input::get('items'))))
 		{
-			return json_encode(array('success' => 0, 'message' => $itemValidator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors' => $itemValidator->errors()->toArray()
+			), 400);
 		}
 
 		$input = Input::all();
@@ -204,7 +215,7 @@ class QuoteController extends \BaseController {
 
 		Event::fire('quote.modified', $id);
 
-		return json_encode(array('success' => 1));
+		return Response::json(array('success' => true), 200);
 	}
 
 	/**
@@ -224,7 +235,8 @@ class QuoteController extends \BaseController {
 		->with('statuses', $statuses)
 		->with('taxRates', $taxRates)
 		->with('quoteTaxRates', $quoteTaxRates)
-		->with('customFields', App::make('CustomFieldRepository')->getByTable('quotes'));
+		->with('customFields', App::make('CustomFieldRepository')->getByTable('quotes'))
+		->with('mailConfigured', (Config::get('fi.mailDriver')) ? true : false);;
 	}
 
 	/**
@@ -315,65 +327,17 @@ class QuoteController extends \BaseController {
 	{
 		if (!$this->validator->validate(Input::all(), 'createRules'))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $this->validator->errors()->toArray()
+			), 400);
 		}
 
-		$client = App::make('ClientRepository');
+		$quoteCopy = App::make('QuoteCopyRepository');
 
-		$clientId = $client->findIdByName(Input::get('client_name'));
+		$quoteId = $quoteCopy->copyQuote(Input::get('quote_id'), Input::get('client_name'), Date::unformat(Input::get('created_at')), Date::incrementDateByDays(Date::unformat(Input::get('created_at')), Config::get('fi.quotesExpireAfter')), Input::get('invoice_group_id'), Auth::user()->id);
 
-		if (!$clientId)
-		{
-			$clientId = $client->create(array('name' => Input::get('client_name')));
-		}
-
-		$quoteId = $this->quote->create(
-			array(
-				'client_id'        => $clientId,
-				'created_at'       => Date::unformat(Input::get('created_at')),
-				'expires_at'       => Date::incrementDateByDays(Date::unformat(Input::get('created_at')), Config::get('fi.quotesExpireAfter')),
-				'invoice_group_id' => Input::get('invoice_group_id'),
-				'number'           => $this->invoiceGroup->generateNumber(Input::get('invoice_group_id')),
-				'user_id'          => Auth::user()->id,
-				'quote_status_id'  => 1,
-				'url_key'          => str_random(32)
-				)
-			);
-
-		$items = $this->quoteItem->findByQuoteId(Input::get('quote_id'));
-
-		foreach ($items as $item)
-		{
-			$itemId = $this->quoteItem->create(
-				array(
-					'quote_id'      => $quoteId,
-					'name'          => $item->name,
-					'description'   => $item->description,
-					'quantity'      => $item->quantity,
-					'price'         => $item->price,
-					'tax_rate_id'   => $item->tax_rate_id,
-					'display_order' => $item->display_order
-				)
-			);
-		}
-
-		$quoteTaxRates = $this->quoteTaxRate->findByQuoteId(Input::get('quote_id'));
-
-		foreach ($quoteTaxRates as $quoteTaxRate)
-		{
-			$this->quoteTaxRate->create(
-				array(
-					'quote_id'         => $quoteId,
-					'tax_rate_id'      => $quoteTaxRate->tax_rate_id,
-					'include_item_tax' => $quoteTaxRate->include_item_tax,
-					'tax_total'        => $quoteTaxRate->tax_total
-					)
-				);
-		}
-
-		Event::fire('quote.modified', $quoteId);
-
-		return json_encode(array('success' => 1, 'id' => $quoteId));
+		return Response::json(array('success' => true, 'id' => $quoteId), 200);
 	}
 
 	/**
@@ -386,7 +350,10 @@ class QuoteController extends \BaseController {
 
 		if (!$this->validator->validate($input, 'toInvoiceRules'))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors' => $this->validator->errors()->toArray()
+			), 400);
 		}
 
 		$invoice        = App::make('InvoiceRepository');
@@ -437,7 +404,7 @@ class QuoteController extends \BaseController {
 				);
 		}
 
-		return json_encode(array('success' => 1, 'redirectTo' => route('invoices.show', array('invoice' => $invoiceId))));
+		return Response::json(array('success' => true, 'redirectTo' => route('invoices.show', array('invoice' => $invoiceId))), 200);
 	}
 
 	/**
@@ -503,6 +470,16 @@ class QuoteController extends \BaseController {
 	{
 		$quote = $this->quote->find(Input::get('quote_id'));
 
+		$mailValidator = App::make('MailValidator');
+
+		if (!$mailValidator->validate(Input::all()))
+		{
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $mailValidator->errors()->toArray()
+			), 400);
+		}
+
 		try
 		{
 			Mail::send('templates.emails.quote', array('quote' => $quote), function($message) use ($quote)
@@ -511,12 +488,13 @@ class QuoteController extends \BaseController {
 				->to(Input::get('to'), $quote->client->name)
 				->subject(Input::get('subject'));
 			});
-
-			return json_encode(array('success' => 1));
 		}
-		catch (Exception $e)
+		catch (\Swift_TransportException $e)
 		{
-			return json_encode(array('success' => 0, 'message' => $e->getMessage()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => array(array($e->getMessage()))
+			), 400);
 		}
 	}
 	

@@ -42,14 +42,13 @@
 				recurring: $("input:radio[name=recurring]:checked").val(),
 				recurring_frequency: $('#recurring_frequency').val(),
 				recurring_period: $('#recurring_period').val()
-			},
-			function(data) {
-				var response = JSON.parse(data);
-				if (response.success == '1') {
-					window.location = "{{ url('invoices') }}/" + response.id;
-				}
-				else {
-					alert(response.message);
+			}).done(function(response) {
+				window.location = "{{ url('invoices') }}/" + response.id;
+			}).fail(function(response) {
+				if (response.status == 400) {
+					showErrors($.parseJSON(response.responseText).errors, '#form-status-placeholder');
+				} else {
+					alert("{{ trans('fi.unknown_error') }}");
 				}
 			});
 		});
@@ -64,6 +63,8 @@
 			<h3>{{ trans('fi.create_invoice') }}</h3>
 		</div>
 		<div class="modal-body">
+
+			<div id="form-status-placeholder"></div>
 
 			<div class="control-group">
 				<label class="control-label">{{ trans('fi.client') }}: </label>

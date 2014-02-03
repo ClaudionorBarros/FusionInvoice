@@ -39,11 +39,13 @@
 								<i class="icon-file-alt"></i> {{ trans('fi.view_invoice') }}
 							</a>
 						</li>
+						@if ($mailConfigured)
 						<li>
 							<a href="javascript:void(0)" class="mail-invoice" data-invoice-id="{{ $invoice->id }}" data-redirect-to="{{ Request::url() }}">
 								<i class="icon-envelope"></i> {{ trans('fi.send_email') }}
 							</a>
 						</li>
+						@endif
 						<li>
 							<a href="javascript:void(0)" class="enter-payment" data-invoice-id="{{ $invoice->id }}">
 							<i class="icon-shopping-cart"></i> {{ trans('fi.enter_payment') }}

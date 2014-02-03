@@ -1,50 +1,41 @@
 <script type="text/javascript">
-    $(function()
-    {
-        $('#enter-payment').modal('show');
-        
-        $('#enter-payment').on('shown', function() {
-            $('#payment_amount').focus();
-        });
-        
-        $('.datepicker').datepicker({autoclose: true, format: '{{ Config::get('fi.datepickerFormat') }}' });
+	$(function()
+	{
+		$('#enter-payment').modal('show');
 
-        $('#btn-modal-payment-submit').click(function()
-        {
-        	var custom_fields = {};
+		$('#enter-payment').on('shown', function() {
+			$('#payment_amount').focus();
+		});
 
-            $('.custom-form-field').each(function() {
-                custom_fields[$(this).data('field-name')] = $(this).val();
-            });
+		$('.datepicker').datepicker({autoclose: true, format: '{{ Config::get('fi.datepickerFormat') }}' });
 
-            $.post("{{ route('payments.ajax.store') }}", {
-                invoice_id: $('#invoice_id').val(),
-                amount: $('#payment_amount').val(),
-                payment_method_id: $('#payment_method_id').val(),
-                paid_at: $('#payment_date').val(),
-                note: $('#payment_note').val(),
-                custom: JSON.stringify(custom_fields)
-            },
-            function(data) {
-                var response = JSON.parse(data);
-                if (response.success == '1')
-                {
-                    // The validation was successful and payment was added
-                    window.location = "{{ $redirectTo }}";
-                }
-                else
-                {
-                    // The validation was not successful
-                    // $('.control-group').removeClass('error');
-                    // for (var key in response.validation_errors) {
-                    //     $('#' + key).parent().parent().addClass('error');
+		$('#btn-modal-payment-submit').click(function()
+		{
+			var custom_fields = {};
 
-                    // }
-                    alert(response.message);
-                }
-            });
-        });
-    });
+			$('.custom-form-field').each(function() {
+				custom_fields[$(this).data('field-name')] = $(this).val();
+			});
+
+			$.post("{{ route('payments.ajax.store') }}", {
+				invoice_id: $('#invoice_id').val(),
+				amount: $('#payment_amount').val(),
+				payment_method_id: $('#payment_method_id').val(),
+				paid_at: $('#payment_date').val(),
+				note: $('#payment_note').val(),
+				custom: JSON.stringify(custom_fields)
+			}).done(function(response) {
+				$('#form-status-placeholder').html('<div class="alert alert-success">{{ trans('fi.success') }}</div>');
+				setTimeout('window.location="{{ $redirectTo }}";', 1000);
+			}).fail(function(response) {
+				if (response.status == 400) {
+					showErrors($.parseJSON(response.responseText).errors, '#form-status-placeholder');
+				} else {
+					alert("{{ trans('fi.unknown_error') }}");
+				}
+			});
+		});
+	});
 </script>
 
 <div id="enter-payment" class="modal hide">
@@ -53,6 +44,9 @@
 		<h3>{{ trans('fi.enter_payment') }}</h3>
 	</div>
 	<div class="modal-body">
+
+		<div id="form-status-placeholder"></div>
+
 		<form class="form-horizontal">
 			
 			<input type="hidden" name="invoice_id" id="invoice_id" value="{{ $invoice_id }}">
@@ -104,7 +98,7 @@
 	</div>
 
 	<div class="modal-footer">
-        <button class="btn btn-danger" type="button" data-dismiss="modal"><i class="icon-white icon-remove"></i> {{ trans('fi.cancel') }}</button>
+		<button class="btn btn-danger" type="button" data-dismiss="modal"><i class="icon-white icon-remove"></i> {{ trans('fi.cancel') }}</button>
 		<button class="btn btn-primary" id="btn-modal-payment-submit" type="button"><i class="icon-white icon-ok"></i> {{ trans('fi.submit') }}</button>
 	</div>
 

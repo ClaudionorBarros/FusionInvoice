@@ -16,6 +16,7 @@ use Config;
 use Input;
 use Mail;
 use Redirect;
+use Response;
 use View;
 
 use FI\Classes\Date;
@@ -57,6 +58,7 @@ class PaymentController extends \BaseController {
 
 		return View::make('payments.index')
 		->with('payments', $payments)
+		->with('mailConfigured', (Config::get('fi.mailDriver')) ? true : false)
 		->with('filterRoute', route('payments.index'));
 	}
 
@@ -156,6 +158,7 @@ class PaymentController extends \BaseController {
 	 */
 	public function ajaxStore()
 	{
+		// Validate the input and return correct response
 		$input = Input::all();
 
 		$custom = (array) json_decode($input['custom']);
@@ -163,7 +166,10 @@ class PaymentController extends \BaseController {
 
 		if (!$this->validator->validate($input))
 		{
-			return json_encode(array('success' => 0, 'message' => $this->validator->errors()->first()));
+			return Response::json(array(
+				'success' => false,
+				'errors' => $this->validator->errors()->toArray()
+			), 400);
 		}
 
 		$input['paid_at'] = Date::unformat($input['paid_at']);
@@ -173,7 +179,7 @@ class PaymentController extends \BaseController {
 
 		App::make('PaymentCustomRepository')->save($custom, $paymentId);
 
-		return json_encode(array('success' => 1));
+		return Response::json(array('success' => true), 200);
 	}
 
 	/**
@@ -200,6 +206,16 @@ class PaymentController extends \BaseController {
 	{
 		$payment = $this->payment->find(Input::get('payment_id'));
 
+		$mailValidator = App::make('MailValidator');
+
+		if (!$mailValidator->validate(Input::all()))
+		{
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $mailValidator->errors()->toArray()
+			), 400);
+		}
+
 		try
 		{
 			Mail::send('templates.emails.payment_receipt', array('payment' => $payment), function($message) use ($payment)
@@ -211,9 +227,12 @@ class PaymentController extends \BaseController {
 
 			return json_encode(array('success' => 1));
 		}
-		catch (Exception $e)
+		catch (\Swift_TransportException $e)
 		{
-			return json_encode(array('success' => 0, 'message' => $e->getMessage()));
+			return Response::json(array(
+				'success' => false,
+				'errors'  => array(array($e->getMessage()))
+			), 400);
 		}
 	}
 

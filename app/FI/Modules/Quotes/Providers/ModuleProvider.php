@@ -54,6 +54,17 @@ class ModuleProvider extends ServiceProvider {
                 $app->make('QuoteValidator')
             );
         });
+
+        $this->app->bind('QuoteCopyRepository', function($app)
+        {
+            return new \FI\Modules\Quotes\Repositories\QuoteCopyRepository(
+                $app->make('ClientRepository'),
+                $app->make('QuoteRepository'),
+                $app->make('InvoiceGroupRepository'),
+                $app->make('QuoteItemRepository'),
+                $app->make('QuoteTaxRateRepository')
+            );
+        });
 	}
 
 }

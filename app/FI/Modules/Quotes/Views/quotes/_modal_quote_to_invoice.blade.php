@@ -15,26 +15,18 @@
 				created_at: $('#created_at').val(),
 				invoice_group_id: $('#invoice_group_id').val(),
 				user_id: {{ $user_id }}
-			},
-			function(data) {
-				var response = JSON.parse(data);
-				if (response.success == '1')
-				{
-					window.location = response.redirectTo;
-				}
-				else
-				{
-					// The validation was not successful
-					// $('.control-group').removeClass('error');
-					// for (var key in response.validation_errors) {
-					// 	$('#' + key).parent().parent().addClass('error');
-					// }
-					alert(response.message);
+			}).done(function(response) {
+				window.location = response.redirectTo;
+			}).fail(function(response) {
+				if (response.status == 400) {
+					showErrors($.parseJSON(response.responseText).errors, '#form-status-placeholder');
+				} else {
+					alert("{{ trans('fi.unknown_error') }}");
 				}
 			});
 		});
 	});
-	
+
 </script>
 
 <div id="quote-to-invoice" class="modal hide">
@@ -44,6 +36,8 @@
 			<h3>{{ trans('fi.quote_to_invoice') }}</h3>
 		</div>
 		<div class="modal-body">
+
+			<div id="form-status-placeholder"></div>
 
 			<div class="control-group">
 				<label class="control-label">{{ trans('fi.invoice_date') }}: </label>
@@ -63,7 +57,7 @@
 		</div>
 
 		<div class="modal-footer">
-            <button class="btn btn-danger" type="button" data-dismiss="modal"><i class="icon-white icon-remove"></i> {{ trans('fi.cancel') }}</button>
+			<button class="btn btn-danger" type="button" data-dismiss="modal"><i class="icon-white icon-remove"></i> {{ trans('fi.cancel') }}</button>
 			<button class="btn btn-primary" id="btn-quote-to-invoice-confirm" type="button"><i class="icon-white icon-ok"></i> {{ trans('fi.submit') }}</button>
 		</div>
 
