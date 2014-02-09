@@ -27,7 +27,6 @@ class PaymentEventProvider extends ServiceProvider {
 	 */
 	public function boot()
 	{
-		// Create the empty invoice amount record
 		\Event::listen('invoice.deleted', function($invoiceId)
 		{
 			$paymentRepo = $this->app->make('PaymentRepository');

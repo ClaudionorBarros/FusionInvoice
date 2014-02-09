@@ -25,8 +25,7 @@
 				note: $('#payment_note').val(),
 				custom: JSON.stringify(custom_fields)
 			}).done(function(response) {
-				$('#form-status-placeholder').html('<div class="alert alert-success">{{ trans('fi.success') }}</div>');
-				setTimeout('window.location="{{ $redirectTo }}";', 1000);
+				window.location = "{{ $redirectTo }}";
 			}).fail(function(response) {
 				if (response.status == 400) {
 					showErrors($.parseJSON(response.responseText).errors, '#form-status-placeholder');
