@@ -35,6 +35,8 @@ class ModuleProvider extends ServiceProvider {
         $this->app->bind('QuoteItemRepository', 'FI\Modules\Quotes\Repositories\QuoteItemRepository');
         $this->app->bind('QuoteRepository', 'FI\Modules\Quotes\Repositories\QuoteRepository');
         $this->app->bind('QuoteTaxRateRepository', 'FI\Modules\Quotes\Repositories\QuoteTaxRateRepository');
+
+        $this->app->bind('QuoteTaxRateValidator', 'FI\Modules\Quotes\Validators\QuoteTaxRateValidator');
         $this->app->bind('QuoteValidator', 'FI\Modules\Quotes\Validators\QuoteValidator');
 
         $this->app->bind('PublicQuoteController', function($app)

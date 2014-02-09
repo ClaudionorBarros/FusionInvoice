@@ -9,9 +9,14 @@
 				quote_id: {{ $quote_id }},
 				tax_rate_id: $('#tax_rate_id').val(),
 				include_item_tax: $('#include_item_tax').val()
-			},
-			function(data) {
+			}).done(function(response) {
 				window.location = "{{ route('quotes.show', array($quote_id)) }}";
+			}).fail(function(response) {
+				if (response.status == 400) {
+					showErrors($.parseJSON(response.responseText).errors, '#form-status-placeholder');
+				} else {
+					alert("{{ trans('fi.unknown_error') }}");
+				}
 			});
 		});
 	});
@@ -25,6 +30,8 @@
 		</div>
 		<div class="modal-body">
 
+			<div id="form-status-placeholder"></div>
+
 			<div class="control-group">
 				<label class="control-label">{{ trans('fi.tax_rate') }}: </label>
 				<div class="controls">
@@ -35,10 +42,7 @@
 			<div class="control-group">
 				<label class="control-label">{{ trans('fi.tax_rate_placement') }}</label>
 				<div class="controls">
-					<select name="include_item_tax" id="include_item_tax">
-						<option value="0">{{ trans('fi.apply_before_item_tax') }}</option>
-						<option value="1">{{ trans('fi.apply_after_item_tax') }}</option>
-					</select>
+					{{ Form::select('include_item_tax', $includeItemTax, null, array('id' => 'include_item_tax')) }}
 				</div>
 			</div>
 			

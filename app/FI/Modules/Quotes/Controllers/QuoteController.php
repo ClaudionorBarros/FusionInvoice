@@ -276,21 +276,6 @@ class QuoteController extends \BaseController {
 	}
 
 	/**
-	 * Displays modal to add quote taxes from ajax request
-	 * @return View
-	 */
-	public function modalAddQuoteTax()
-	{
-		$taxRates = App::make('TaxRateRepository')->lists();
-
-		unset($taxRates[0]);
-
-		return View::make('quotes._modal_add_quote_tax')
-		->with('quote_id', Input::get('quote_id'))
-		->with('taxRates', $taxRates);
-	}
-
-	/**
 	 * Displays modal to convert quote to invoice
 	 * @return view
 	 */
@@ -408,10 +393,34 @@ class QuoteController extends \BaseController {
 	}
 
 	/**
+	 * Displays modal to add quote taxes from ajax request
+	 * @return View
+	 */
+	public function modalAddQuoteTax()
+	{
+		$taxRates = App::make('TaxRateRepository')->lists();
+
+		return View::make('quotes._modal_add_quote_tax')
+		->with('quote_id', Input::get('quote_id'))
+		->with('taxRates', $taxRates)
+		->with('includeItemTax', array('0' => trans('fi.apply_before_item_tax'), '1' => trans('fi.apply_after_item_tax')));
+	}
+
+	/**
 	 * Saves quote tax from ajax request
 	 */
 	public function saveQuoteTax()
 	{
+		$validator = App::make('QuoteTaxRateValidator');
+
+		if (!$validator->validate(Input::all()))
+		{
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $validator->errors()->toArray()
+			), 400);
+		}
+
 		$this->quoteTaxRate->create(
 			array(
 				'quote_id'         => Input::get('quote_id'), 
@@ -419,6 +428,8 @@ class QuoteController extends \BaseController {
 				'include_item_tax' => Input::get('include_item_tax')
 			)
 		);
+
+		return Response::json(array('success' => true), 200);
 	}
 
 	/**
