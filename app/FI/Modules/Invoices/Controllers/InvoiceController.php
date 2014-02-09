@@ -293,24 +293,36 @@ class InvoiceController extends \BaseController {
 	{
 		$taxRates = App::make('TaxRateRepository')->lists();
 
-		unset($taxRates[0]);
-
 		return View::make('invoices._modal_add_invoice_tax')
 		->with('invoice_id', Input::get('invoice_id'))
-		->with('taxRates', $taxRates);
+		->with('taxRates', $taxRates)
+		->with('includeItemTax', array('0' => trans('fi.apply_before_item_tax'), '1' => trans('fi.apply_after_item_tax')));
 	}
 
 	/**
 	 * Saves invoice tax from ajax request
+	 * @return Response
 	 */
 	public function saveInvoiceTax()
 	{
+		$validator = App::make('InvoiceTaxRateValidator');
+
+		if (!$validator->validate(Input::all()))
+		{
+			return Response::json(array(
+				'success' => false,
+				'errors'  => $validator->errors()->toArray()
+			), 400);
+		}
+
 		$this->invoiceTaxRate->create(array(
 			'invoice_id'       => Input::get('invoice_id'),
 			'tax_rate_id'      => Input::get('tax_rate_id'),
 			'include_item_tax' => Input::get('include_item_tax')
 			)
 		);
+
+		return Response::json(array('success' => true), 200);
 	}
 
 	/**

@@ -52,7 +52,7 @@ class TaxRateRepository {
 	 */
 	public function lists()
 	{
-		return array_merge(array('0' => trans('fi.none')), TaxRate::lists('name', 'id'));
+		return array('0' => trans('fi.none')) + TaxRate::lists('name', 'id');
 	}
 	
 	/**
