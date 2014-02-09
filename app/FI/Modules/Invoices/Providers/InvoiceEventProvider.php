@@ -91,6 +91,7 @@ class InvoiceEventProvider extends ServiceProvider {
 			\Log::info('Event Handler: invoice.modified');
 
 			// Resolve ALL THE THINGS
+			$invoice           = \App::make('InvoiceRepository');
 			$invoiceItem       = \App::make('InvoiceItemRepository');
 			$invoiceItemAmount = \App::make('InvoiceItemAmountRepository');
 			$invoiceAmount     = \App::make('InvoiceAmountRepository');
@@ -157,9 +158,15 @@ class InvoiceEventProvider extends ServiceProvider {
 			// Check to see if the invoice should be marked as paid
 			if ($calculatedAmount['total'] > 0 and $calculatedAmount['balance'] <= 0)
 			{
-				$invoice = \App::make('InvoiceRepository');
-
 				$invoice->update(array('invoice_status_id' => 4), $invoiceId);
+			}
+
+			// Check to see if the invoice was marked as paid but should no longer be
+			$invoiceStatusId = $invoice->find($invoiceId)->invoice_status_id;
+
+			if ($calculatedAmount['total'] > 0 and $calculatedAmount['balance'] > 0 and $invoiceStatusId == 4)
+			{
+				$invoice->update(array('invoice_status_id' => 2), $invoiceId);
 			}
 		});
 
