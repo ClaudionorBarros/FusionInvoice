@@ -149,5 +149,15 @@ class InvoiceRepository {
 
 		\Event::fire('invoice.deleted', array($id));
 	}
+
+	/**
+	 * Mark invoice as viewed
+	 * @param  int $id
+	 * @return void
+	 */
+	public function markAsViewed($id)
+	{
+		Invoice::find($id)->fill(array('invoice_status_id' => 3))->save();
+	}
 	
 }

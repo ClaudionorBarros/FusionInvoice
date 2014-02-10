@@ -40,6 +40,8 @@ class PublicInvoiceController extends \BaseController {
 	{
 		$invoice = $this->invoice->findByUrlKey($urlKey);
 
+		$this->invoice->markAsViewed($invoice->id);
+
 		return View::make('templates.invoices.' . str_replace('.blade.php', '', Config::get('fi.invoiceTemplate')))
 		->with('invoice', $invoice);
 	}
