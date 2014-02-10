@@ -141,4 +141,14 @@ class QuoteRepository {
 		\Event::fire('quote.deleted', array($id));
 	}
 
+	/**
+	 * Mark quote as viewed
+	 * @param  int $id
+	 * @return void
+	 */
+	public function markAsViewed($id)
+	{
+		Quote::find($id)->fill(array('quote_status_id' => 3))->save();
+	}
+
 }

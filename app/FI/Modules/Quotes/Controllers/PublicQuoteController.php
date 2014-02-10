@@ -40,6 +40,8 @@ class PublicQuoteController extends \BaseController {
 	{
 		$quote = $this->quote->findByUrlKey($urlKey);
 
+		$this->quote->markAsViewed($quote->id);
+
 		return View::make('templates.quotes.' . str_replace('.blade.php', '', Config::get('fi.quoteTemplate')))
 		->with('quote', $quote);
 	}
